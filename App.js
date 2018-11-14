@@ -1,25 +1,22 @@
 import React from 'react'
-import {SafeAreaView, View, TouchableOpacity, findNodeHandle, Text, Image, StatusBar, StyleSheet} from 'react-native'
-import {RNTCamera, RNTCameraManager} from './CameraView'
+import {SafeAreaView, View, TouchableOpacity, Text, Image, StatusBar, StyleSheet} from 'react-native'
+import {CameraView} from './CameraView'
 
 export default class App extends React.Component {
-  comp = null
+  cameraViewRef = React.createRef()
+
   state = {
     uri: null,
     cameraPosition: 'back'
   }
 
   takePhoto = async () => {
-    const uri = await RNTCameraManager.takePhoto(findNodeHandle(this.comp))
+    const uri = await this.cameraViewRef.current.takePhoto()
     this.setState({uri})
   }
 
   switchCamera = () => {
-    const {cameraPosition} = this.state
-    const nextPosition = cameraPosition === 'back' ? 'front' : 'back'
-
-    RNTCameraManager.switchCamera(findNodeHandle(this.comp), nextPosition)
-    this.setState({cameraPosition: nextPosition})
+    this.cameraViewRef.current.switchCamera()
   }
 
   render() {
@@ -35,7 +32,7 @@ export default class App extends React.Component {
         {this.state.uri ?
           <Image source={{uri: this.state.uri}} style={{flex: 1}} /> :
           <React.Fragment>
-            <RNTCamera style={{flex: 0.85}} ref={r => { this.comp = r }} />
+            <CameraView style={{flex: 0.85}} ref={this.cameraViewRef} />
             <View style={{flex: 0.15, alignItems: 'center', justifyContent: 'space-evenly', flexDirection: 'row', backgroundColor: '#000'}}>
             <TouchableOpacity onPress={this.switchCamera}>
                 <View style={{width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', marginRight: 15}}></View>

@@ -53,12 +53,28 @@ AVCaptureVideoPreviewLayer *videoPreviewLayer;
   [session commitConfiguration];
 }
 
--(void)takePhoto:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject
+-(void)takePhoto:(CGFloat)quality resolver:(RCTPromiseResolveBlock)resolve
+        rejecter:(RCTPromiseRejectBlock)reject
 {
   NSNotificationCenter __weak *center = [NSNotificationCenter defaultCenter];
   id __block token = [center addObserverForName:@"photoReady" object:nil queue:nil usingBlock:^(NSNotification *note){
     [center removeObserver:token]; // One-time notification
-    resolve([note.userInfo valueForKey:@"imagePath"]);
+    NSData *data = [note.userInfo valueForKey:@"imageData"];
+    if (!data) {
+      reject(RCTErrorUnspecified, @"Unable to create photo", nil);
+      
+      return;
+    }
+    
+    NSData *imageData = UIImageJPEGRepresentation([UIImage imageWithData:data], quality);
+    NSLog(@"Size %f", (float)imageData.length / 1024.0f / 1024.0f);
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+    NSString *cachesDir = paths[0];
+    NSString *imageName = [[[NSUUID UUID] UUIDString] stringByAppendingPathExtension:@"jpg"];
+    NSString *fullPath = [cachesDir stringByAppendingPathComponent:imageName];
+    [imageData writeToFile:fullPath atomically:YES];
+    
+    resolve(fullPath);
   }];
   
   AVCapturePhotoSettings *settings = [AVCapturePhotoSettings photoSettingsWithFormat:@{AVVideoCodecKey: AVVideoCodecJPEG}];
@@ -68,7 +84,6 @@ AVCaptureVideoPreviewLayer *videoPreviewLayer;
 - (void)willMoveToSuperview:(UIView *)newSuperview
 {
   [super willMoveToSuperview:newSuperview];
-  NSLog(@"willMoveToSuperview");
   session = [AVCaptureSession new];
   session.sessionPreset = AVCaptureSessionPresetPhoto;
   
@@ -121,30 +136,15 @@ AVCaptureVideoPreviewLayer *videoPreviewLayer;
   }
   
   NSData *imageData = [AVCapturePhotoOutput JPEGPhotoDataRepresentationForJPEGSampleBuffer:photoSampleBuffer previewPhotoSampleBuffer:previewPhotoSampleBuffer];
+  NSDictionary *userInfo = @{
+                             @"imageData": imageData
+                             };
   
-  
-
-  NSData *imgData = UIImageJPEGRepresentation([UIImage imageWithData:imageData], 0.7);
-  NSLog(@"Full file size is : %.2f MB", (float)imageData.length/1024.0f/1024.0f);
-  NSLog(@"0.7 file size is : %.2f MB", (float)imgData.length/1024.0f/1024.0f);
-  
-  if (imageData) {
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
-    NSString *cachesDir = paths[0];
-    NSString *imageName = [[[NSUUID UUID] UUIDString] stringByAppendingPathExtension:@"jpg"];
-    NSString *fullPath = [cachesDir stringByAppendingPathComponent:imageName];
-    [imageData writeToFile:fullPath atomically:YES];
-    NSDictionary *userInfo = @{
-                               @"imagePath": fullPath
-                               };
-    
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"photoReady" object:nil userInfo:userInfo];
-  }
+  [[NSNotificationCenter defaultCenter] postNotificationName:@"photoReady" object:nil userInfo:userInfo];
 }
 
 - (void)removeFromSuperview
 {
-  NSLog(@"removeFromSuperview");
   [super removeFromSuperview];
   [session stopRunning];
 }

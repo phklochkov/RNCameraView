@@ -10,6 +10,7 @@
 #import <AVFoundation/AVFoundation.h>
 
 @interface RNTCameraView : UIView<AVCapturePhotoCaptureDelegate>
--(void)takePhoto:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+-(void)takePhoto:(CGFloat)quality resolver:(RCTPromiseResolveBlock)resolve
+        rejecter:(RCTPromiseRejectBlock)reject;
 -(void)switchCamera:(NSString*) position;
 @end

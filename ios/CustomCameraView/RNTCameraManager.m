@@ -29,10 +29,10 @@
 
 RCT_EXPORT_MODULE()
 
-RCT_EXPORT_METHOD(takePhoto:(nonnull NSNumber *)reactTag takePhotoWithResolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(takePhoto:(nonnull NSNumber *)reactTag withImageQuality:(CGFloat)quality withResolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
   [self findView:reactTag withUIBlock:^(RNTCameraView *cameraView) {
-     [cameraView takePhoto:resolve rejecter:reject];
+    [cameraView takePhoto:quality resolver:resolve rejecter:reject];
    }];
 }
 
